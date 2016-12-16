@@ -40,9 +40,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <LiquidCrystal.h>
-#include <TimeLib.h> 
-#include <TimeAlarms.h>
+#include <Wire.h>
+#include <DS3231.h>
+
+#define BUFF_MAX 128
+
 void timeStamp();
+
+// Init the DS3231 using the hardware interface
+DS3231 rtc;
+
+
+// Init a Time-data structure
+RTCDateTime  t;
 
 
 // initialize the library with the numbers of the interface pins
@@ -52,48 +62,74 @@ const int ledPin =  13;    // LED pin
 unsigned long buttonPushedMillis; // when button was released
 bool ledOn = false;
 
-void setup() {
-  // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
-  setTime(22,50,0,12,12,16); // setTime(hr,min,sec,day,month,yr)
-    // Set up the pushbutton pins to be an input:
-  pinMode(button1Pin, INPUT);
+void setup() 
+{
+	// Setup Serial connection
+	Serial.begin(9600);
+	
+	// Initialize the rtc object
+	rtc.begin();
+	
+	// Manual (YYYY, MM, DD, HH, II, SS uncomment to set date
+	//rtc.setDateTime(2016, 12, 16, 00, 01, 00);
+  
+	// set up the LCD's number of columns and rows:
+	lcd.begin(16, 2);
 
-  // Set up the LED pin to be an output:
-  pinMode(ledPin, OUTPUT);     
+	// Set up the pushbutton pins to be an input:
+	pinMode(button1Pin, INPUT);
+
+	// Set up the LED pin to be an output:
+	pinMode(ledPin, OUTPUT);     
 }
 
 void loop() 
 {
-  unsigned long currentMillis = millis();
-   // set the cursor to (0,0):
-  lcd.setCursor(0, 0);
-  lcd.print(String(monthShortStr(month()))+ " " + String(day()) + "  ");
-  // display time with correct digits
-  char buffer[9];
-  sprintf(buffer, "%02d:%02d:%02d", hourFormat12(), minute(), second());
-  if(millis() % 1000)
-  {
-    lcd.print(buffer);
-  }
+	// Get data from the DS3231
+	t = rtc.getDateTime();
   
+	char buff[BUFF_MAX];
+	
+	//snprintf(buff, BUFF_MAX, "%d.%02d.%02d %02d:%02d:%02d", t.year, t.mon, t.mday, t.hour, t.min, t.sec);
+	
+	//lcd.print(buff);
+	
+	// get current millis to track initial time
+	unsigned long currentMillis = millis();
+	
+	// set the cursor to (0,0):
+	lcd.setCursor(0, 0);
+	
+	// string representation of time
+	lcd.print(rtc.dateFormat("M d  h:i:s", t));
+	
+	//lcd.print(rtc.dateFormat("M d h:ia", t));
+	// display time with correct digits
+	/*char buffer[9];
+	sprintf(buffer, "%02d:%02d:%02d", hourFormat12(), minute(), second());
+	// display time every second
+	if(millis() % 1000)
+	{
+		lcd.print(buffer);
+	}
+  */
+	// start on second row
+	lcd.setCursor(0, 1);
 
-  // start on second row
-  lcd.setCursor(0, 1);
-  
-  // display time fed and how
-  lcd.print("BLF: ");
-  
-  if(now() == 1481583010) //if time is 10:50 pm
-  {
-    timeStamp();
-    lcd.print(" (A)"); //automatic feed
-  }
-  if(now() == 1481583015) //if time is 10:50 pm
-  {
-    timeStamp();
-    lcd.print(" (W)"); //web feed
-  }
+	// display time fed and how
+	lcd.print("BLF: ");
+  /*
+	if(now() == 1481583010) //if time is 10:50 pm
+	{
+		timeStamp();
+		lcd.print(" (A)"); //automatic feed
+	}
+	if(now() == 1481583015) //if time is 10:50 pm
+	{
+		timeStamp();
+		lcd.print(" (W)"); //web feed
+	}
+*/
 
   int button1State = digitalRead(button1Pin);  // variables to hold the pushbutton states
   int ledState = digitalRead(ledPin);
@@ -114,20 +150,16 @@ void loop()
      digitalWrite(ledPin, LOW);
      // setup our next "state"
      ledState = false;
-     // save when the LED turned on
-     //ledTurnedOnAt = currentMillis;
-     // wait for next button press
-     //ledReady = false;
    }
   }
-  
 }
 
 
 void timeStamp()
 {
-  char *ampm = isAM()?"AM":"PM";
-  time_t t = now();
+  //char *ampm = isAM()?"AM":"PM";
+  //time_t t = now();
   
-  lcd.print(String(hourFormat12(t)) + ":" + String(minute(t)) + ampm);
+  //lcd.print(String(hourFormat12(t)) + ":" + String(minute(t)) + ampm);
+  Serial.println("time");
 }
