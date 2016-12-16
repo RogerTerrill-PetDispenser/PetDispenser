@@ -102,17 +102,7 @@ void loop()
 	
 	// string representation of time
 	lcd.print(rtc.dateFormat("M d  h:i:s", t));
-	
-	//lcd.print(rtc.dateFormat("M d h:ia", t));
-	// display time with correct digits
-	/*char buffer[9];
-	sprintf(buffer, "%02d:%02d:%02d", hourFormat12(), minute(), second());
-	// display time every second
-	if(millis() % 1000)
-	{
-		lcd.print(buffer);
-	}
-  */
+
 	// start on second row
 	lcd.setCursor(0, 1);
 
@@ -157,9 +147,5 @@ void loop()
 
 void timeStamp()
 {
-  //char *ampm = isAM()?"AM":"PM";
-  //time_t t = now();
-  
-  //lcd.print(String(hourFormat12(t)) + ":" + String(minute(t)) + ampm);
-  Serial.println("time");
+  lcd.print(rtc.dateFormat("h:ia", t));
 }
