@@ -85,6 +85,17 @@ void setup()
 
   // set up the motor pin to be an output:
   pinMode(motorPin, OUTPUT);
+  
+  // clear alarm
+  rtc.armAlarm1(false);
+  rtc.clearAlarm1();
+  
+  // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
+  rtc.setAlarm1(0, 00, 02, 00, DS3231_MATCH_H_M_S);
+  
+  // Check alarm settings
+  checkAlarms();
+  
 }
 
 void loop()
@@ -112,18 +123,6 @@ void loop()
 
   // display time fed and how
   lcd.print("BLF: ");
-  /*
-    if(now() == 1481583010) //if time is 10:50 pm
-    {
-    timeStamp();
-    lcd.print(" (A)"); //automatic feed
-    }
-    if(now() == 1481583015) //if time is 10:50 pm
-    {
-    timeStamp();
-    lcd.print(" (W)"); //web feed
-    }
-  */
 
   int button1State = digitalRead(button1Pin);  // variables to hold the pushbutton states
   int ledState = digitalRead(ledPin);
@@ -152,17 +151,100 @@ void loop()
       digitalWrite(motorPin, LOW);
     }
   }
+  if(rtc.isAlarm1())
+  {
+	  digitalWrite(ledPin, HIGH);
+  }
 }
 
 
 void timeStamp()
 {
-  lcd.print(rtc.dateFormat("h:ia", t));
+	lcd.print(rtc.dateFormat("h:ia", t));
 }
 
 void feed()
 {
-  int speed = 10;
-  analogWrite(motorPin, speed);
+	int speed = 10;
+	analogWrite(motorPin, speed);
+}
 
+void checkAlarms()
+{
+  RTCAlarmTime a1;  
+  RTCAlarmTime a2;
+
+  if (rtc.isArmed1())
+  {
+    a1 = rtc.getAlarm1();
+
+    Serial.print("Alarm1 is triggered ");
+    switch (rtc.getAlarmType1())
+    {
+      case DS3231_EVERY_SECOND:
+        Serial.println("every second");
+        break;
+      case DS3231_MATCH_S:
+        Serial.print("when seconds match: ");
+        Serial.println(rtc.dateFormat("__ __:__:s", a1));
+        break;
+      case DS3231_MATCH_M_S:
+        Serial.print("when minutes and sencods match: ");
+        Serial.println(rtc.dateFormat("__ __:i:s", a1));
+        break;
+      case DS3231_MATCH_H_M_S:
+        Serial.print("when hours, minutes and seconds match: ");
+        Serial.println(rtc.dateFormat("__ H:i:s", a1));
+        break;
+      case DS3231_MATCH_DT_H_M_S:
+        Serial.print("when date, hours, minutes and seconds match: ");
+        Serial.println(rtc.dateFormat("d H:i:s", a1));
+        break;
+      case DS3231_MATCH_DY_H_M_S:
+        Serial.print("when day of week, hours, minutes and seconds match: ");
+        Serial.println(rtc.dateFormat("l H:i:s", a1));
+        break;
+      default: 
+        Serial.println("UNKNOWN RULE");
+        break;
+    }
+  } else
+  {
+    Serial.println("Alarm1 is disarmed.");
+  }
+
+  if (rtc.isArmed2())
+  {
+    a2 = rtc.getAlarm2();
+
+    Serial.print("Alarm2 is triggered ");
+    switch (rtc.getAlarmType2())
+    {
+      case DS3231_EVERY_MINUTE:
+        Serial.println("every minute");
+        break;
+      case DS3231_MATCH_M:
+        Serial.print("when minutes match: ");
+        Serial.println(rtc.dateFormat("__ __:i:s", a2));
+        break;
+      case DS3231_MATCH_H_M:
+        Serial.print("when hours and minutes match:");
+        Serial.println(rtc.dateFormat("__ H:i:s", a2));
+        break;
+      case DS3231_MATCH_DT_H_M:
+        Serial.print("when date, hours and minutes match: ");
+        Serial.println(rtc.dateFormat("d H:i:s", a2));
+        break;
+      case DS3231_MATCH_DY_H_M:
+        Serial.println("when day of week, hours and minutes match: ");
+        Serial.print(rtc.dateFormat("l H:i:s", a2));
+        break;
+      default: 
+        Serial.println("UNKNOWN RULE"); 
+        break;
+    }
+  } else
+  {
+    Serial.println("Alarm2 is disarmed.");
+  }
 }
