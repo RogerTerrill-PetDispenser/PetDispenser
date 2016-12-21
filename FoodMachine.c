@@ -44,6 +44,7 @@
 #include <DS3231.h>
 
 #define BUFF_MAX 128
+#define HOURS_BETWEEN_MEAL .1 // the time the automatic checker will check since last meal
 
 void timeStamp();
 
@@ -59,8 +60,9 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 const int button1Pin = 6;  // pushbutton 1 pin
 const int ledPin =  13;    // LED pin
 const int motorPin = 10;  // Motor Pin
-unsigned long buttonPushedMillis; // when button was released
+unsigned long buttonPushedMillis = 0; // when button was released
 unsigned long autoMillis; //when the auto feed last ran
+unsigned long currentMillis; // get current millis to track initial time
 bool ledOn = false;
 
 void setup()
@@ -93,8 +95,8 @@ void setup()
   //rtc.clearAlarm2();
   
   // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
-  rtc.setAlarm1(0, 00, 00, 59, DS3231_MATCH_H_M_S);
-  rtc.setAlarm2(0, 23, 33,    DS3231_MATCH_H_M);
+  rtc.setAlarm1(0, 00, 30, 00, DS3231_MATCH_H_M_S);
+  rtc.setAlarm2(0, 00, 24,    DS3231_MATCH_H_M);
   
   // Check alarm settings
   checkAlarms();
@@ -112,9 +114,6 @@ void loop()
 
   //lcd.print(buff);
 
-  // get current millis to track initial time
-  unsigned long currentMillis = millis();
-
   // set the cursor to (0,0):
   lcd.setCursor(0, 0);
 
@@ -126,12 +125,15 @@ void loop()
 
   // display time fed and how
   lcd.print("BLF: ");
+  
+  // get current millis
+  currentMillis = millis();
 
 	// variables to hold the pushbutton states
   int button1State = digitalRead(button1Pin);  
   if (button1State == LOW)
   {
-    buttonPushedMillis = currentMillis;
+    buttonPushedMillis = millis();
     ledOn = true;
     digitalWrite(ledPin, HIGH);
     timeStamp();
@@ -154,9 +156,9 @@ void loop()
       digitalWrite(motorPin, LOW);
     }
   }
-  if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis))
+  if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(HOURS_BETWEEN_MEAL))
   {
-	  feed();
+	  //feed();
     Serial.println("ALARM 1 TRIGGERED!");
     digitalWrite(ledPin, HIGH);
   }
@@ -254,9 +256,9 @@ void checkAlarms()
   }
 }
 
-bool checkLastFed(unsigned long actionMillis, unsigned long current)
+bool checkLastFed(double hours)
 {
-	if(current - actionMillis <= 36000000)
+	if((unsigned long)(currentMillis - buttonPushedMillis) <= (hours * 60 * 60 * 1000))
 		return 0;
 	else
 		return 1;
