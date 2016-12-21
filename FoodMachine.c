@@ -62,6 +62,7 @@ const int motorPin = 10;  // Motor Pin
 unsigned long buttonPushedMillis; // when button was released
 unsigned long autoMillis; //when the auto feed last ran
 bool ledOn = false;
+bool buttonPushed = false;
 
 void setup()
 {
@@ -93,8 +94,8 @@ void setup()
   //rtc.clearAlarm2();
   
   // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
-  rtc.setAlarm1(0, 00, 41, 45, DS3231_MATCH_H_M_S);
-  rtc.setAlarm2(0, 00, 42,    DS3231_MATCH_H_M);
+  rtc.setAlarm1(0, 06, 00, 00, DS3231_MATCH_H_M_S);
+  rtc.setAlarm2(0, 18, 00,    DS3231_MATCH_H_M);
   
   // Check alarm settings
   checkAlarms();
@@ -133,6 +134,7 @@ void loop()
   {
     buttonPushedMillis = currentMillis;
     ledOn = true;
+    buttonPushed = true;
     digitalWrite(ledPin, HIGH);
     timeStamp();
     lcd.print(" (B)");
@@ -154,9 +156,14 @@ void loop()
       digitalWrite(motorPin, LOW);
     }
   }
+  
+  // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
+  // Prevents auto from running if manual was executed withing 4 hours.
   if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis))
   {
-    Serial.println("ALARM 1 TRIGGERED!");
+    timeStamp();
+    lcd.print(" (A)");
+    feed();
     digitalWrite(ledPin, HIGH);
   }
 }
@@ -255,7 +262,8 @@ void checkAlarms()
 
 bool checkLastFed(unsigned long actionMillis, unsigned long current)
 {
-  if(current - actionMillis <= 10000)
+  // checks to make sure button has been pressed and then checks for manual feed time
+  if(((current - actionMillis <= 14400000) && buttonPushed == true))
     return 0;
   else
     return 1;
