@@ -89,9 +89,12 @@ void setup()
   // clear alarm
   rtc.armAlarm1(false);
   rtc.clearAlarm1();
+  rtc.armAlarm2(false);
+  rtc.clearAlarm2();
   
   // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
-  rtc.setAlarm1(0, 00, 02, 00, DS3231_MATCH_H_M_S);
+  rtc.setAlarm1(0, 01, 31, 45, DS3231_MATCH_H_M_S);
+  rtc.setAlarm2(0, 01, 32, 00, DS3231_MATCH_H_M_S);
   
   // Check alarm settings
   checkAlarms();
@@ -145,14 +148,15 @@ void loop()
       // setup our next "state"
       ledState = false;
     }
-    if ((unsigned long)(currentMillis - buttonPushedMillis) >= 5000)
+    if ((unsigned long)(currentMillis - buttonPushedMillis) >= 8000)
     {
       // okay, enough time has passed since the button was let go.
       digitalWrite(motorPin, LOW);
     }
   }
-  if(rtc.isAlarm1())
+  if(rtc.isAlarm1() || rtc.isAlarm2())
   {
+	  Serial.println("ALARM 2 TRIGGERED!");
 	  digitalWrite(ledPin, HIGH);
   }
 }
@@ -165,7 +169,7 @@ void timeStamp()
 
 void feed()
 {
-	int speed = 10;
+	int speed = 255;
 	analogWrite(motorPin, speed);
 }
 
@@ -218,7 +222,7 @@ void checkAlarms()
     a2 = rtc.getAlarm2();
 
     Serial.print("Alarm2 is triggered ");
-    switch (rtc.getAlarmType2())
+    switch (rtc.getAlarmType1())
     {
       case DS3231_EVERY_MINUTE:
         Serial.println("every minute");
@@ -227,9 +231,9 @@ void checkAlarms()
         Serial.print("when minutes match: ");
         Serial.println(rtc.dateFormat("__ __:i:s", a2));
         break;
-      case DS3231_MATCH_H_M:
-        Serial.print("when hours and minutes match:");
-        Serial.println(rtc.dateFormat("__ H:i:s", a2));
+	case DS3231_MATCH_H_M_S:
+        Serial.print("when hours, minutes and seconds match: ");
+        Serial.println(rtc.dateFormat("__ H:i:s", a1));
         break;
       case DS3231_MATCH_DT_H_M:
         Serial.print("when date, hours and minutes match: ");
