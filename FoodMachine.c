@@ -50,7 +50,6 @@ void timeStamp();
 // Init the DS3231 using the hardware interface
 DS3231 rtc;
 
-
 // Init a Time-data structure
 RTCDateTime  t;
 
@@ -61,6 +60,7 @@ const int button1Pin = 6;  // pushbutton 1 pin
 const int ledPin =  13;    // LED pin
 const int motorPin = 10;  // Motor Pin
 unsigned long buttonPushedMillis; // when button was released
+unsigned long autoMillis; //when the auto feed last ran
 bool ledOn = false;
 
 void setup()
@@ -87,14 +87,14 @@ void setup()
   pinMode(motorPin, OUTPUT);
   
   // clear alarm
-  rtc.armAlarm1(false);
-  rtc.clearAlarm1();
-  rtc.armAlarm2(false);
-  rtc.clearAlarm2();
+  //rtc.armAlarm1(false);
+  //rtc.clearAlarm1();
+  //rtc.armAlarm2(false);
+  //rtc.clearAlarm2();
   
   // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
-  rtc.setAlarm1(0, 01, 31, 45, DS3231_MATCH_H_M_S);
-  rtc.setAlarm2(0, 01, 32, 00, DS3231_MATCH_H_M_S);
+  rtc.setAlarm1(0, 00, 00, 59, DS3231_MATCH_H_M_S);
+  rtc.setAlarm2(0, 23, 33,    DS3231_MATCH_H_M);
   
   // Check alarm settings
   checkAlarms();
@@ -127,8 +127,8 @@ void loop()
   // display time fed and how
   lcd.print("BLF: ");
 
-  int button1State = digitalRead(button1Pin);  // variables to hold the pushbutton states
-  int ledState = digitalRead(ledPin);
+	// variables to hold the pushbutton states
+  int button1State = digitalRead(button1Pin);  
   if (button1State == LOW)
   {
     buttonPushedMillis = currentMillis;
@@ -138,6 +138,7 @@ void loop()
     lcd.print(" (B)");
     feed();
   }
+  
   if (ledOn)
   {
     //this is typical millis code here:
@@ -145,8 +146,7 @@ void loop()
     {
       // okay, enough time has passed since the button was let go.
       digitalWrite(ledPin, LOW);
-      // setup our next "state"
-      ledState = false;
+      ledOn=false;
     }
     if ((unsigned long)(currentMillis - buttonPushedMillis) >= 8000)
     {
@@ -154,23 +154,24 @@ void loop()
       digitalWrite(motorPin, LOW);
     }
   }
-  if(rtc.isAlarm1() || rtc.isAlarm2())
+  if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis))
   {
-	  Serial.println("ALARM 2 TRIGGERED!");
-	  digitalWrite(ledPin, HIGH);
+	  feed();
+    Serial.println("ALARM 1 TRIGGERED!");
+    digitalWrite(ledPin, HIGH);
   }
 }
 
 
 void timeStamp()
 {
-	lcd.print(rtc.dateFormat("h:ia", t));
+  lcd.print(rtc.dateFormat("h:ia", t));
 }
 
 void feed()
 {
-	int speed = 255;
-	analogWrite(motorPin, speed);
+  int speed = 255;
+  analogWrite(motorPin, speed);
 }
 
 void checkAlarms()
@@ -222,7 +223,7 @@ void checkAlarms()
     a2 = rtc.getAlarm2();
 
     Serial.print("Alarm2 is triggered ");
-    switch (rtc.getAlarmType1())
+    switch (rtc.getAlarmType2())
     {
       case DS3231_EVERY_MINUTE:
         Serial.println("every minute");
@@ -231,9 +232,9 @@ void checkAlarms()
         Serial.print("when minutes match: ");
         Serial.println(rtc.dateFormat("__ __:i:s", a2));
         break;
-	case DS3231_MATCH_H_M_S:
-        Serial.print("when hours, minutes and seconds match: ");
-        Serial.println(rtc.dateFormat("__ H:i:s", a1));
+      case DS3231_MATCH_H_M:
+        Serial.print("when hours and minutes match:");
+        Serial.println(rtc.dateFormat("__ H:i:s", a2));
         break;
       case DS3231_MATCH_DT_H_M:
         Serial.print("when date, hours and minutes match: ");
@@ -251,4 +252,12 @@ void checkAlarms()
   {
     Serial.println("Alarm2 is disarmed.");
   }
+}
+
+bool checkLastFed(unsigned long actionMillis, unsigned long current)
+{
+	if(current - actionMillis <= 36000000)
+		return 0;
+	else
+		return 1;
 }
