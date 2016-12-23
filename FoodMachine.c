@@ -132,7 +132,7 @@ void loop()
   int button1State = digitalRead(button1Pin);  
   if (button1State == LOW)
   {
-    buttonPushedMillis = currentMillis;
+    buttonPushedMillis = millis();
     ledOn = true;
     buttonPushed = true;
     digitalWrite(ledPin, HIGH);
@@ -141,30 +141,41 @@ void loop()
     feed();
   }
   
-  if (ledOn)
+  if(buttonPushedMillis + 8000 < millis())
+  {
+    digitalWrite(ledPin, LOW);
+    digitalWrite(motorPin, LOW);
+  }
+  
+  /*if (ledOn)
   {
     //this is typical millis code here:
     if ((unsigned long)(currentMillis - buttonPushedMillis) >= 3000)
     {
       // okay, enough time has passed since the button was let go.
       digitalWrite(ledPin, LOW);
-      ledOn=false;
     }
     if ((unsigned long)(currentMillis - buttonPushedMillis) >= 8000)
     {
       // okay, enough time has passed since the button was let go.
       digitalWrite(motorPin, LOW);
     }
-  }
+  }*/
   
   // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
   // Prevents auto from running if manual was executed withing 4 hours.
   if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis))
   {
+    autoMillis = millis();
     timeStamp();
     lcd.print(" (A)");
     feed();
     digitalWrite(ledPin, HIGH);
+  }
+  if(autoMillis + 8000 < millis())
+  {
+    digitalWrite(ledPin, LOW);
+    digitalWrite(motorPin, LOW);
   }
 }
 
