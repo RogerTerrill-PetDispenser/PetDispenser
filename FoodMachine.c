@@ -63,6 +63,7 @@ unsigned long buttonPushedMillis; // when button was released
 unsigned long autoMillis; //when the auto feed last ran
 bool ledOn = false;
 bool buttonPushed = false;
+bool autoFeed = false;
 
 void setup()
 {
@@ -141,10 +142,11 @@ void loop()
     feed();
   }
   
-  if(buttonPushedMillis + 8000 < millis())
+  if(buttonPushedMillis + 8000 < millis() && buttonPushed == true)
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
+  buttonPushed = false;
   }
   
   /*if (ledOn)
@@ -171,11 +173,13 @@ void loop()
     lcd.print(" (A)");
     feed();
     digitalWrite(ledPin, HIGH);
+  autoFeed = true;
   }
-  if(autoMillis + 8000 < millis())
+  if(autoMillis + 8000 < millis() && autoFeed == true)
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
+  autoFeed = false;
   }
 }
 
