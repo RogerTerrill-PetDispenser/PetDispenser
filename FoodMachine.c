@@ -60,6 +60,7 @@ const int ledPin = 13;            // LED pin
 const int motorPin = 10;          // Motor Pin
 unsigned long buttonPushedMillis; // when button was released
 unsigned long autoMillis;         // when the auto feed last ran
+bool manualFeed = false;
 bool ledOn = false;
 bool buttonPushed = false;
 bool autoFeed = false;
@@ -134,6 +135,7 @@ void loop()
 	{
 		song();
 		buttonPushedMillis = millis();
+		manualFeed = true;
 		ledOn = true;
 		buttonPushed = true;
 		digitalWrite(ledPin, HIGH);
@@ -148,10 +150,14 @@ void loop()
 		digitalWrite(motorPin, LOW);
 		buttonPushed = false;
     }
+	if((buttonPushedMillis + hours(4)) < millis() && manualFeed == true)
+	{
+		manualFeed = false;
+	}
 
     // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
     // Prevents auto from running if manual was executed withing 4 hours.
-    if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis)) 
+    if((rtc.isAlarm1() || rtc.isAlarm2()) && manualFeed == false) 
 	{
 		song();
 		autoMillis = millis();
@@ -255,10 +261,10 @@ void checkAlarms()
     }
 }
 
-bool checkLastFed(unsigned long actionMillis, unsigned long current)
+/*bool checkLastFed(unsigned long actionMillis, unsigned long current)
 {
     // checks to make sure button has been pressed and then checks for manual feed time
-    if(((current - actionMillis <= 14400000) && buttonPushed == true))
+    if(((current - actionMillis <= 14400000) && manualFeed == true))
 	{
 		return 0;
 	}
@@ -266,7 +272,7 @@ bool checkLastFed(unsigned long actionMillis, unsigned long current)
 	{
 		return 1;
 	}
-}
+}*/
 
 void song()
 {
@@ -344,10 +350,15 @@ int frequency(char note)
     for(i = 0; i < numNotes; i++) // Step through the notes
     {
 		if(names[i] == note) // Is this the one?
-	{
-	    return (frequencies[i]); // Yes! Return the frequency
-	}
+		{
+			return (frequencies[i]); // Yes! Return the frequency
+		}
     }
     return (0); // We looked through everything and didn't find it,
                 // but we still need to return a value, so return 0.
+}
+
+unsigned int hours(unsigned int hr)
+{
+	return (hr * 60 * 60 * 1000);
 }
