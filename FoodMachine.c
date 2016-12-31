@@ -141,7 +141,7 @@ void loop()
   
     if(button1State == LOW) 
   {
-    //song();
+    song();
     buttonPushedMillis = millis();
     manualFeed = true;
     ledOn = true;
