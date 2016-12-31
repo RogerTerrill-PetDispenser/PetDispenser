@@ -130,49 +130,57 @@ void loop()
 
     // variables to hold the pushbutton states
     int button1State = digitalRead(button1Pin);
-	
+  /*if(millis() % 1000 >= 0 && manualFeed == true)
+  {
+    Serial.println("manualFeed == true");
+  }
+  else if(millis() % 1000 >= 0 && manualFeed == false)
+  {
+    Serial.println("manualFeed == false");
+  }*/
+  
     if(button1State == LOW) 
-	{
-		song();
-		buttonPushedMillis = millis();
-		manualFeed = true;
-		ledOn = true;
-		buttonPushed = true;
-		digitalWrite(ledPin, HIGH);
-		timeStamp();
-		lcd.print(" (B)");
-		feed();
+  {
+    song();
+    buttonPushedMillis = millis();
+    manualFeed = true;
+    ledOn = true;
+    buttonPushed = true;
+    digitalWrite(ledPin, HIGH);
+    timeStamp();
+    lcd.print(" (B)");
+    feed();
     }
 
     if(buttonPushedMillis + 8000 < millis() && buttonPushed == true)
-	{
-		digitalWrite(ledPin, LOW);
-		digitalWrite(motorPin, LOW);
-		buttonPushed = false;
+  {
+    digitalWrite(ledPin, LOW);
+    digitalWrite(motorPin, LOW);
+    buttonPushed = false;
     }
-	if((buttonPushedMillis + hours(4)) < millis() && manualFeed == true)
-	{
-		manualFeed = false;
-	}
+  if((buttonPushedMillis + hours(4)) < millis() && manualFeed == true)
+  {
+    manualFeed = false;
+  }
 
     // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
     // Prevents auto from running if manual was executed withing 4 hours.
     if((rtc.isAlarm1() || rtc.isAlarm2()) && manualFeed == false) 
-	{
-		song();
-		autoMillis = millis();
-		timeStamp();
-		lcd.print(" (A)");
-		feed();
-		digitalWrite(ledPin, HIGH);
-		autoFeed = true;
-	}
-	
+  {
+    song();
+    autoMillis = millis();
+    timeStamp();
+    lcd.print(" (A)");
+    feed();
+    digitalWrite(ledPin, HIGH);
+    autoFeed = true;
+  }
+  
     if(autoMillis + 8000 < millis() && autoFeed == true) 
-	{
-		digitalWrite(ledPin, LOW);
-		digitalWrite(motorPin, LOW);
-		autoFeed = false;
+  {
+    digitalWrite(ledPin, LOW);
+    digitalWrite(motorPin, LOW);
+    autoFeed = false;
     }
 }
 
@@ -193,86 +201,73 @@ void checkAlarms()
     RTCAlarmTime a2;
 
     if(rtc.isArmed1()) {
-	a1 = rtc.getAlarm1();
+  a1 = rtc.getAlarm1();
 
-	Serial.print("Alarm1 is triggered ");
-	switch(rtc.getAlarmType1()) {
-	case DS3231_EVERY_SECOND:
-	    Serial.println("every second");
-	    break;
-	case DS3231_MATCH_S:
-	    Serial.print("when seconds match: ");
-	    Serial.println(rtc.dateFormat("__ __:__:s", a1));
-	    break;
-	case DS3231_MATCH_M_S:
-	    Serial.print("when minutes and sencods match: ");
-	    Serial.println(rtc.dateFormat("__ __:i:s", a1));
-	    break;
-	case DS3231_MATCH_H_M_S:
-	    Serial.print("when hours, minutes and seconds match: ");
-	    Serial.println(rtc.dateFormat("__ H:i:s", a1));
-	    break;
-	case DS3231_MATCH_DT_H_M_S:
-	    Serial.print("when date, hours, minutes and seconds match: ");
-	    Serial.println(rtc.dateFormat("d H:i:s", a1));
-	    break;
-	case DS3231_MATCH_DY_H_M_S:
-	    Serial.print("when day of week, hours, minutes and seconds match: ");
-	    Serial.println(rtc.dateFormat("l H:i:s", a1));
-	    break;
-	default:
-	    Serial.println("UNKNOWN RULE");
-	    break;
-	}
+  Serial.print("Alarm1 is triggered ");
+  switch(rtc.getAlarmType1()) {
+  case DS3231_EVERY_SECOND:
+      Serial.println("every second");
+      break;
+  case DS3231_MATCH_S:
+      Serial.print("when seconds match: ");
+      Serial.println(rtc.dateFormat("__ __:__:s", a1));
+      break;
+  case DS3231_MATCH_M_S:
+      Serial.print("when minutes and sencods match: ");
+      Serial.println(rtc.dateFormat("__ __:i:s", a1));
+      break;
+  case DS3231_MATCH_H_M_S:
+      Serial.print("when hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("__ H:i:s", a1));
+      break;
+  case DS3231_MATCH_DT_H_M_S:
+      Serial.print("when date, hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("d H:i:s", a1));
+      break;
+  case DS3231_MATCH_DY_H_M_S:
+      Serial.print("when day of week, hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("l H:i:s", a1));
+      break;
+  default:
+      Serial.println("UNKNOWN RULE");
+      break;
+  }
     } else {
-	Serial.println("Alarm1 is disarmed.");
+  Serial.println("Alarm1 is disarmed.");
     }
 
     if(rtc.isArmed2()) {
-	a2 = rtc.getAlarm2();
+  a2 = rtc.getAlarm2();
 
-	Serial.print("Alarm2 is triggered ");
-	switch(rtc.getAlarmType2()) {
-	case DS3231_EVERY_MINUTE:
-	    Serial.println("every minute");
-	    break;
-	case DS3231_MATCH_M:
-	    Serial.print("when minutes match: ");
-	    Serial.println(rtc.dateFormat("__ __:i:s", a2));
-	    break;
-	case DS3231_MATCH_H_M:
-	    Serial.print("when hours and minutes match:");
-	    Serial.println(rtc.dateFormat("__ H:i:s", a2));
-	    break;
-	case DS3231_MATCH_DT_H_M:
-	    Serial.print("when date, hours and minutes match: ");
-	    Serial.println(rtc.dateFormat("d H:i:s", a2));
-	    break;
-	case DS3231_MATCH_DY_H_M:
-	    Serial.println("when day of week, hours and minutes match: ");
-	    Serial.print(rtc.dateFormat("l H:i:s", a2));
-	    break;
-	default:
-	    Serial.println("UNKNOWN RULE");
-	    break;
-	}
+  Serial.print("Alarm2 is triggered ");
+  switch(rtc.getAlarmType2()) {
+  case DS3231_EVERY_MINUTE:
+      Serial.println("every minute");
+      break;
+  case DS3231_MATCH_M:
+      Serial.print("when minutes match: ");
+      Serial.println(rtc.dateFormat("__ __:i:s", a2));
+      break;
+  case DS3231_MATCH_H_M:
+      Serial.print("when hours and minutes match:");
+      Serial.println(rtc.dateFormat("__ H:i:s", a2));
+      break;
+  case DS3231_MATCH_DT_H_M:
+      Serial.print("when date, hours and minutes match: ");
+      Serial.println(rtc.dateFormat("d H:i:s", a2));
+      break;
+  case DS3231_MATCH_DY_H_M:
+      Serial.println("when day of week, hours and minutes match: ");
+      Serial.print(rtc.dateFormat("l H:i:s", a2));
+      break;
+  default:
+      Serial.println("UNKNOWN RULE");
+      break;
+  }
     } else {
-	Serial.println("Alarm2 is disarmed.");
+  Serial.println("Alarm2 is disarmed.");
     }
 }
-
-/*bool checkLastFed(unsigned long actionMillis, unsigned long current)
-{
-    // checks to make sure button has been pressed and then checks for manual feed time
-    if(((current - actionMillis <= 14400000) && manualFeed == true))
-	{
-		return 0;
-	}
-    else
-	{
-		return 1;
-	}
-}*/
 
 void song()
 {
@@ -306,17 +301,17 @@ void song()
 
     for(i = 0; i < songLength; i++) // step through the song arrays
     {
-	duration = beats[i] * tempo; // length of note/rest in ms
+  duration = beats[i] * tempo; // length of note/rest in ms
 
-	if(notes[i] == ' ') // is this a rest?
-	{
-	    delay(duration); // then pause for a moment
-	} else               // otherwise, play the note
-	{
-	    tone(buzzerPin, frequency(notes[i]), duration);
-	    delay(duration); // wait for tone to finish
-	}
-	delay(tempo / 10); // brief pause between notes
+  if(notes[i] == ' ') // is this a rest?
+  {
+      delay(duration); // then pause for a moment
+  } else               // otherwise, play the note
+  {
+      tone(buzzerPin, frequency(notes[i]), duration);
+      delay(duration); // wait for tone to finish
+  }
+  delay(tempo / 10); // brief pause between notes
     }
 
     // We only want to play the song once, so we'll pause forever:
@@ -349,16 +344,16 @@ int frequency(char note)
 
     for(i = 0; i < numNotes; i++) // Step through the notes
     {
-		if(names[i] == note) // Is this the one?
-		{
-			return (frequencies[i]); // Yes! Return the frequency
-		}
+    if(names[i] == note) // Is this the one?
+    {
+      return (frequencies[i]); // Yes! Return the frequency
+    }
     }
     return (0); // We looked through everything and didn't find it,
                 // but we still need to return a value, so return 0.
 }
 
-unsigned int hours(unsigned int hr)
+unsigned long hours(unsigned long hr)
 {
-	return (hr * 60 * 60 * 1000);
+  return (hr * 60 * 60 * 1000);
 }
