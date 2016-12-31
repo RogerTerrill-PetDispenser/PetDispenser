@@ -141,7 +141,7 @@ void loop()
   
     if(button1State == LOW) 
   {
-    song();
+    //song();
     buttonPushedMillis = millis();
     manualFeed = true;
     ledOn = true;
@@ -152,7 +152,7 @@ void loop()
     feed();
     }
 
-    if(buttonPushedMillis + 8000 < millis() && buttonPushed == true)
+    if(buttonPushedMillis + 7500 < millis() && buttonPushed == true)
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
@@ -176,7 +176,7 @@ void loop()
     autoFeed = true;
   }
   
-    if(autoMillis + 8000 < millis() && autoFeed == true) 
+    if(autoMillis + 7500 < millis() && autoFeed == true) 
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
