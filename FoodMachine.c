@@ -51,235 +51,309 @@ void timeStamp();
 DS3231 rtc;
 
 // Init a Time-data structure
-RTCDateTime  t;
-
+RTCDateTime t;
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-const int button1Pin = 6;  // pushbutton 1 pin
-const int ledPin =  13;    // LED pin
-const int motorPin = 10;  // Motor Pin
+const int button1Pin = 6;         // pushbutton 1 pin
+const int ledPin = 13;            // LED pin
+const int motorPin = 10;          // Motor Pin
 unsigned long buttonPushedMillis; // when button was released
-unsigned long autoMillis; //when the auto feed last ran
+unsigned long autoMillis;         // when the auto feed last ran
+bool manualFeed = false;
 bool ledOn = false;
 bool buttonPushed = false;
 bool autoFeed = false;
 
 void setup()
 {
-  // Setup Serial connection
-  Serial.begin(9600);
+    // Setup Serial connection
+    Serial.begin(9600);
 
-  // Initialize the rtc object
-  rtc.begin();
+    // Initialize the rtc object
+    rtc.begin();
 
-  // Manual (YYYY, MM, DD, HH, II, SS uncomment to set date
-  //rtc.setDateTime(2016, 12, 16, 00, 01, 00);
+    // Manual (YYYY, MM, DD, HH, II, SS uncomment to set date
+    // rtc.setDateTime(2016, 12, 16, 00, 01, 00);
 
-  // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
+    // set up the LCD's number of columns and rows:
+    lcd.begin(16, 2);
 
-  // Set up the pushbutton pins to be an input:
-  pinMode(button1Pin, INPUT);
+    // Set up the pushbutton pins to be an input:
+    pinMode(button1Pin, INPUT);
 
-  // Set up the LED pin to be an output:
-  pinMode(ledPin, OUTPUT);
+    // Set up the LED pin to be an output:
+    pinMode(ledPin, OUTPUT);
 
-  // set up the motor pin to be an output:
-  pinMode(motorPin, OUTPUT);
-  
-  // clear alarm
-  //rtc.armAlarm1(false);
-  //rtc.clearAlarm1();
-  //rtc.armAlarm2(false);
-  //rtc.clearAlarm2();
-  
-  // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
-  rtc.setAlarm1(0, 06, 00, 00, DS3231_MATCH_H_M_S);
-  rtc.setAlarm2(0, 18, 00,    DS3231_MATCH_H_M);
-  
-  // Check alarm settings
-  checkAlarms();
-  
+    // set up the motor pin to be an output:
+    pinMode(motorPin, OUTPUT);
+
+    // clear alarm
+    // rtc.armAlarm1(false);
+    // rtc.clearAlarm1();
+    // rtc.armAlarm2(false);
+    // rtc.clearAlarm2();
+
+    // setAlarm1(Date or Day, Hour, Minute, Second, Mode, Armed = true)
+    rtc.setAlarm1(0, 06, 00, 00, DS3231_MATCH_H_M_S);
+    rtc.setAlarm2(0, 18, 00, DS3231_MATCH_H_M);
+
+    // Check alarm settings
+    checkAlarms();
 }
 
 void loop()
 {
-  // Get data from the DS3231
-  t = rtc.getDateTime();
+    // Get data from the DS3231
+    t = rtc.getDateTime();
 
-  char buff[BUFF_MAX];
+    char buff[BUFF_MAX];
 
-  //snprintf(buff, BUFF_MAX, "%d.%02d.%02d %02d:%02d:%02d", t.year, t.mon, t.mday, t.hour, t.min, t.sec);
+    // snprintf(buff, BUFF_MAX, "%d.%02d.%02d %02d:%02d:%02d", t.year, t.mon, t.mday, t.hour, t.min, t.sec);
 
-  //lcd.print(buff);
+    // lcd.print(buff);
 
-  // get current millis to track initial time
-  unsigned long currentMillis = millis();
+    // get current millis to track initial time
+    unsigned long currentMillis = millis();
 
-  // set the cursor to (0,0):
-  lcd.setCursor(0, 0);
+    // set the cursor to (0,0):
+    lcd.setCursor(0, 0);
 
-  // string representation of time
-  lcd.print(rtc.dateFormat("M d  h:i:s", t));
+    // string representation of time
+    lcd.print(rtc.dateFormat("M d  h:i:s", t));
 
-  // start on second row
-  lcd.setCursor(0, 1);
+    // start on second row
+    lcd.setCursor(0, 1);
 
-  // display time fed and how
-  lcd.print("BLF: ");
+    // display time fed and how
+    lcd.print("BLF: ");
 
-  // variables to hold the pushbutton states
-  int button1State = digitalRead(button1Pin);  
-  if (button1State == LOW)
+    // variables to hold the pushbutton states
+    int button1State = digitalRead(button1Pin);
+  /*if(millis() % 1000 >= 0 && manualFeed == true)
   {
+    Serial.println("manualFeed == true");
+  }
+  else if(millis() % 1000 >= 0 && manualFeed == false)
+  {
+    Serial.println("manualFeed == false");
+  }*/
+  
+    if(button1State == LOW) 
+  {
+    song();
     buttonPushedMillis = millis();
+    manualFeed = true;
     ledOn = true;
     buttonPushed = true;
     digitalWrite(ledPin, HIGH);
     timeStamp();
     lcd.print(" (B)");
     feed();
-  }
-  
-  if(buttonPushedMillis + 8000 < millis() && buttonPushed == true)
+    }
+
+    if(buttonPushedMillis + 7500 < millis() && buttonPushed == true)
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
-  buttonPushed = false;
+    buttonPushed = false;
+    }
+  if((buttonPushedMillis + hours(4)) < millis() && manualFeed == true)
+  {
+    manualFeed = false;
   }
-  
-  /*if (ledOn)
+
+    // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
+    // Prevents auto from running if manual was executed withing 4 hours.
+    if((rtc.isAlarm1() || rtc.isAlarm2()) && manualFeed == false) 
   {
-    //this is typical millis code here:
-    if ((unsigned long)(currentMillis - buttonPushedMillis) >= 3000)
-    {
-      // okay, enough time has passed since the button was let go.
-      digitalWrite(ledPin, LOW);
-    }
-    if ((unsigned long)(currentMillis - buttonPushedMillis) >= 8000)
-    {
-      // okay, enough time has passed since the button was let go.
-      digitalWrite(motorPin, LOW);
-    }
-  }*/
-  
-  // Either alarm is ran as long as checkLastFed with 4 hours since last button press is confirmed
-  // Prevents auto from running if manual was executed withing 4 hours.
-  if((rtc.isAlarm1() || rtc.isAlarm2()) && checkLastFed(buttonPushedMillis, currentMillis))
-  {
+    song();
     autoMillis = millis();
     timeStamp();
     lcd.print(" (A)");
     feed();
     digitalWrite(ledPin, HIGH);
-  autoFeed = true;
+    autoFeed = true;
   }
-  if(autoMillis + 8000 < millis() && autoFeed == true)
+  
+    if(autoMillis + 7500 < millis() && autoFeed == true) 
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
-  autoFeed = false;
-  }
+    autoFeed = false;
+    }
 }
-
 
 void timeStamp()
 {
-  lcd.print(rtc.dateFormat("h:ia", t));
+    lcd.print(rtc.dateFormat("h:ia", t));
 }
 
 void feed()
 {
-  int speed = 255;
-  analogWrite(motorPin, speed);
+    int speed = 255;
+    analogWrite(motorPin, speed);
 }
 
 void checkAlarms()
 {
-  RTCAlarmTime a1;  
-  RTCAlarmTime a2;
+    RTCAlarmTime a1;
+    RTCAlarmTime a2;
 
-  if (rtc.isArmed1())
-  {
-    a1 = rtc.getAlarm1();
+    if(rtc.isArmed1()) {
+  a1 = rtc.getAlarm1();
 
-    Serial.print("Alarm1 is triggered ");
-    switch (rtc.getAlarmType1())
-    {
-      case DS3231_EVERY_SECOND:
-        Serial.println("every second");
-        break;
-      case DS3231_MATCH_S:
-        Serial.print("when seconds match: ");
-        Serial.println(rtc.dateFormat("__ __:__:s", a1));
-        break;
-      case DS3231_MATCH_M_S:
-        Serial.print("when minutes and sencods match: ");
-        Serial.println(rtc.dateFormat("__ __:i:s", a1));
-        break;
-      case DS3231_MATCH_H_M_S:
-        Serial.print("when hours, minutes and seconds match: ");
-        Serial.println(rtc.dateFormat("__ H:i:s", a1));
-        break;
-      case DS3231_MATCH_DT_H_M_S:
-        Serial.print("when date, hours, minutes and seconds match: ");
-        Serial.println(rtc.dateFormat("d H:i:s", a1));
-        break;
-      case DS3231_MATCH_DY_H_M_S:
-        Serial.print("when day of week, hours, minutes and seconds match: ");
-        Serial.println(rtc.dateFormat("l H:i:s", a1));
-        break;
-      default: 
-        Serial.println("UNKNOWN RULE");
-        break;
-    }
-  } else
-  {
-    Serial.println("Alarm1 is disarmed.");
+  Serial.print("Alarm1 is triggered ");
+  switch(rtc.getAlarmType1()) {
+  case DS3231_EVERY_SECOND:
+      Serial.println("every second");
+      break;
+  case DS3231_MATCH_S:
+      Serial.print("when seconds match: ");
+      Serial.println(rtc.dateFormat("__ __:__:s", a1));
+      break;
+  case DS3231_MATCH_M_S:
+      Serial.print("when minutes and sencods match: ");
+      Serial.println(rtc.dateFormat("__ __:i:s", a1));
+      break;
+  case DS3231_MATCH_H_M_S:
+      Serial.print("when hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("__ H:i:s", a1));
+      break;
+  case DS3231_MATCH_DT_H_M_S:
+      Serial.print("when date, hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("d H:i:s", a1));
+      break;
+  case DS3231_MATCH_DY_H_M_S:
+      Serial.print("when day of week, hours, minutes and seconds match: ");
+      Serial.println(rtc.dateFormat("l H:i:s", a1));
+      break;
+  default:
+      Serial.println("UNKNOWN RULE");
+      break;
   }
-
-  if (rtc.isArmed2())
-  {
-    a2 = rtc.getAlarm2();
-
-    Serial.print("Alarm2 is triggered ");
-    switch (rtc.getAlarmType2())
-    {
-      case DS3231_EVERY_MINUTE:
-        Serial.println("every minute");
-        break;
-      case DS3231_MATCH_M:
-        Serial.print("when minutes match: ");
-        Serial.println(rtc.dateFormat("__ __:i:s", a2));
-        break;
-      case DS3231_MATCH_H_M:
-        Serial.print("when hours and minutes match:");
-        Serial.println(rtc.dateFormat("__ H:i:s", a2));
-        break;
-      case DS3231_MATCH_DT_H_M:
-        Serial.print("when date, hours and minutes match: ");
-        Serial.println(rtc.dateFormat("d H:i:s", a2));
-        break;
-      case DS3231_MATCH_DY_H_M:
-        Serial.println("when day of week, hours and minutes match: ");
-        Serial.print(rtc.dateFormat("l H:i:s", a2));
-        break;
-      default: 
-        Serial.println("UNKNOWN RULE"); 
-        break;
+    } else {
+  Serial.println("Alarm1 is disarmed.");
     }
-  } else
-  {
-    Serial.println("Alarm2 is disarmed.");
+
+    if(rtc.isArmed2()) {
+  a2 = rtc.getAlarm2();
+
+  Serial.print("Alarm2 is triggered ");
+  switch(rtc.getAlarmType2()) {
+  case DS3231_EVERY_MINUTE:
+      Serial.println("every minute");
+      break;
+  case DS3231_MATCH_M:
+      Serial.print("when minutes match: ");
+      Serial.println(rtc.dateFormat("__ __:i:s", a2));
+      break;
+  case DS3231_MATCH_H_M:
+      Serial.print("when hours and minutes match:");
+      Serial.println(rtc.dateFormat("__ H:i:s", a2));
+      break;
+  case DS3231_MATCH_DT_H_M:
+      Serial.print("when date, hours and minutes match: ");
+      Serial.println(rtc.dateFormat("d H:i:s", a2));
+      break;
+  case DS3231_MATCH_DY_H_M:
+      Serial.println("when day of week, hours and minutes match: ");
+      Serial.print(rtc.dateFormat("l H:i:s", a2));
+      break;
+  default:
+      Serial.println("UNKNOWN RULE");
+      break;
   }
+    } else {
+  Serial.println("Alarm2 is disarmed.");
+    }
 }
 
-bool checkLastFed(unsigned long actionMillis, unsigned long current)
+void song()
 {
-  // checks to make sure button has been pressed and then checks for manual feed time
-  if(((current - actionMillis <= 14400000) && buttonPushed == true))
-    return 0;
-  else
-    return 1;
+
+    const int buzzerPin = 9;
+    pinMode(buzzerPin, OUTPUT);
+    // We'll set up an array with the notes we want to play
+    // change these values to make different songs!
+
+    // Length must equal the total number of notes and spaces
+
+    const int songLength = 18;
+
+    // Notes is an array of text characters corresponding to the notes
+    // in your song. A space represents a rest (no tone)
+
+    char notes[] = "cdfda ag cdfdg gf "; // a space represents a rest
+
+    // Beats is an array values for each note and rest.
+    // A "1" represents a quarter-note, 2 a half-note, etc.
+    // Don't forget that the rests (spaces) need a length as well.
+
+    int beats[] = { 1, 1, 1, 1, 1, 1, 4, 4, 2, 1, 1, 1, 1, 1, 1, 4, 4, 2 };
+
+    // The tempo is how fast to play the song.
+    // To make the song play faster, decrease this value.
+
+    int tempo = 150;
+
+    int i, duration;
+
+    for(i = 0; i < songLength; i++) // step through the song arrays
+    {
+  duration = beats[i] * tempo; // length of note/rest in ms
+
+  if(notes[i] == ' ') // is this a rest?
+  {
+      delay(duration); // then pause for a moment
+  } else               // otherwise, play the note
+  {
+      tone(buzzerPin, frequency(notes[i]), duration);
+      delay(duration); // wait for tone to finish
+  }
+  delay(tempo / 10); // brief pause between notes
+    }
+
+    // We only want to play the song once, so we'll pause forever:
+    // while(true){}
+    // If you'd like your song to play over and over,
+    // remove the above statement
+}
+
+int frequency(char note)
+{
+    // This function takes a note character (a-g), and returns the
+    // corresponding frequency in Hz for the tone() function.
+
+    int i;
+    const int numNotes = 8; // number of notes we're storing
+
+    // The following arrays hold the note characters and their
+    // corresponding frequencies. The last "C" note is uppercase
+    // to separate it from the first lowercase "c". If you want to
+    // add more notes, you'll need to use unique characters.
+
+    // For the "char" (character) type, we put single characters
+    // in single quotes.
+
+    char names[] = { 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'C' };
+    int frequencies[] = { 262, 294, 330, 349, 392, 440, 494, 523 };
+
+    // Now we'll search through the letters in the array, and if
+    // we find it, we'll return the frequency for that note.
+
+    for(i = 0; i < numNotes; i++) // Step through the notes
+    {
+    if(names[i] == note) // Is this the one?
+    {
+      return (frequencies[i]); // Yes! Return the frequency
+    }
+    }
+    return (0); // We looked through everything and didn't find it,
+                // but we still need to return a value, so return 0.
+}
+
+unsigned long hours(unsigned long hr)
+{
+  return (hr * 60 * 60 * 1000);
 }
