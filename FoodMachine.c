@@ -64,6 +64,7 @@ bool manualFeed = false;
 bool ledOn = false;
 bool buttonPushed = false;
 bool autoFeed = false;
+const int durMilli = 8100;
 
 void setup()
 {
@@ -152,7 +153,7 @@ void loop()
     feed();
     }
 
-    if(buttonPushedMillis + 7500 < millis() && buttonPushed == true)
+    if(buttonPushedMillis + durMilli < millis() && buttonPushed == true)
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
@@ -176,7 +177,7 @@ void loop()
     autoFeed = true;
   }
   
-    if(autoMillis + 7500 < millis() && autoFeed == true) 
+    if(autoMillis + durMilli < millis() && autoFeed == true) 
   {
     digitalWrite(ledPin, LOW);
     digitalWrite(motorPin, LOW);
